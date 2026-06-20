@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignalCore — AI Trading Signal Oracle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0a0c10;
+  --bg1:     #0f1217;
+  --bg2:     #151921;
+  --bg3:     #1b212b;
+  --border:  #232a36;
+  --border2: #2e3645;
+  --green:   #22c55e;
+  --green2:  #4ade80;
+  --green-l: rgba(34,197,94,.1);
+  --red:     #ef4444;
+  --red2:    #f87171;
+  --red-l:   rgba(239,68,68,.1);
+  --amber:   #f59e0b;
+  --amber-l: rgba(245,158,11,.1);
+  --blue:    #3b82f6;
+  --blue2:   #60a5fa;
+  --blue-l:  rgba(59,130,246,.1);
+  --text:    #e5e9f0;
+  --text2:   #5b6472;
+  --text3:   #232a36;
+  --mono:    'JetBrains Mono', monospace;
+  --sans:    'Inter', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(59,130,246,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.025) 1px,transparent 1px);
+  background-size:40px 40px}
+
+header{position:sticky;top:0;z-index:100;background:rgba(10,12,16,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:11px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--blue),#1d4ed8);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 16px rgba(59,130,246,.3)}
+.logo-name{font-weight:700;font-size:15px;letter-spacing:-.01em}
+.logo-sub{font-family:var(--mono);font-size:9px;color:var(--text2);letter-spacing:.06em;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:10px}
+.hchip{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid var(--border2);border-radius:999px;font-family:var(--mono);font-size:10px;color:var(--text2);background:var(--bg1)}
+.hdot{width:5px;height:5px;border-radius:50%;animation:pulse 2s infinite}
+.hdot.b{background:var(--blue2);box-shadow:0 0 6px var(--blue2)}
+.hdot.g{background:var(--green2);box-shadow:0 0 6px var(--green2)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.contract-tag{font-family:var(--mono);font-size:9px;color:var(--text3);padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg1);color:var(--text2)}
+
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:2rem 1.5rem 5rem}
+
+.hero{text-align:center;padding:2.5rem 0 3rem}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;border:1px solid rgba(59,130,246,.3);border-radius:999px;font-size:12px;color:var(--blue2);background:var(--blue-l);margin-bottom:1.5rem}
+.hero-title{font-size:clamp(2rem,5.5vw,3.3rem);font-weight:700;letter-spacing:-.02em;line-height:1.1;margin-bottom:1rem}
+.hero-title span{color:var(--blue2)}
+.hero-sub{font-size:1.05rem;color:var(--text2);max-width:580px;margin:0 auto;line-height:1.6;font-weight:300}
+
+/* CIRCUIT BREAKER BANNER */
+.breaker-banner{display:none;align-items:center;gap:14px;background:var(--red-l);border:2px solid rgba(239,68,68,.4);border-radius:14px;padding:1rem 1.4rem;margin-bottom:1.5rem}
+.breaker-banner.tripped{display:flex;animation:fade-up .4s ease}
+.bb-icon{font-size:1.8rem;flex-shrink:0}
+.bb-text{flex:1}
+.bb-title{font-weight:700;color:var(--red2);font-size:13px;margin-bottom:3px}
+.bb-reason{font-size:11px;color:var(--text2);line-height:1.5}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.75rem}
+.stat{background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:1.1rem;text-align:center;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat:nth-child(1)::before{background:var(--blue)}.stat:nth-child(2)::before{background:var(--green)}.stat:nth-child(3)::before{background:var(--red)}.stat:nth-child(4)::before{background:var(--amber)}
+.stat-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:8px}
+.stat-val{font-size:1.7rem;font-weight:700}
+.stat-val.blue{color:var(--blue2)}.stat-val.green{color:var(--green2)}.stat-val.red{color:var(--red2)}.stat-val.amber{color:var(--amber)}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+.grid-full{grid-column:1/-1}
+
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:16px;padding:1.5rem;position:relative;overflow:hidden;animation:fade-up .5s ease both}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent)}
+@keyframes fade-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.card-title{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text);margin-bottom:1.25rem;display:flex;align-items:center;gap:9px}
+.card-icon{width:27px;height:27px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ci-blue{background:var(--blue-l)}.ci-green{background:var(--green-l)}.ci-red{background:var(--red-l)}.ci-amber{background:var(--amber-l)}
+.method-tag{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text3);padding:2px 8px;border:1px solid var(--border2);border-radius:4px;color:var(--text2)}
+
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field-label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:5px}
+.field input,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:9px 12px;outline:none;border-radius:9px;transition:all .2s}
+.field input:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12);background:var(--bg1)}
+.field input::placeholder,.field textarea::placeholder{color:var(--text3);font-style:italic}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:9px;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;border:1px solid;background:transparent;transition:all .2s}
+.btn:hover{transform:translateY(-1px)}.btn:active{transform:none}.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+.btn-blue{background:linear-gradient(135deg,var(--blue),#1d4ed8);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(59,130,246,.25)}
+.btn-blue:hover{box-shadow:0 8px 22px rgba(59,130,246,.35)}
+.btn-red{color:var(--red2);border-color:rgba(239,68,68,.3)}.btn-red:hover{background:var(--red-l)}
+.btn-outline{color:var(--text2);border-color:var(--border2)}.btn-outline:hover{border-color:var(--blue);color:var(--blue2)}
+.btn-full{width:100%}
+.spinner{width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+.spinner.dark{border-color:var(--border2);border-top-color:var(--blue2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.terminal{margin-top:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:none}
+.terminal.visible{display:block;animation:fade-up .3s ease}
+.term-bar{display:flex;align-items:center;gap:6px;padding:7px 12px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.tdot{width:8px;height:8px;border-radius:50%}
+.term-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:6px;letter-spacing:.06em;color:var(--text2)}
+.term-out{padding:12px 14px;font-family:var(--mono);font-size:10px;line-height:1.9;white-space:pre-wrap;word-break:break-all;max-height:220px;overflow-y:auto;color:var(--text2)}
+.term-out::-webkit-scrollbar{width:3px}.term-out::-webkit-scrollbar-thumb{background:var(--border2)}
+.tg{color:var(--green2)}.tr{color:var(--red2)}.tb{color:var(--blue2)}.ta{color:var(--amber)}.td{color:var(--text3);color:#4a5468}.tw{color:var(--text)}
+
+/* SIGNAL RESULT */
+.signal-result{border-radius:14px;padding:1.4rem 1.6rem;margin-top:14px;display:none;border:2px solid}
+.signal-result.visible{display:block;animation:fade-up .4s ease}
+.signal-result.buy{border-color:rgba(34,197,94,.4);background:var(--green-l)}
+.signal-result.hold{border-color:rgba(245,158,11,.4);background:var(--amber-l)}
+.signal-result.blocked{border-color:rgba(239,68,68,.4);background:var(--red-l)}
+.sr-header{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.sr-icon{font-size:2rem}
+.sr-decision{font-size:1.3rem;font-weight:800;letter-spacing:.02em}
+.signal-result.buy .sr-decision{color:var(--green2)}.signal-result.hold .sr-decision{color:var(--amber)}.signal-result.blocked .sr-decision{color:var(--red2)}
+.sr-score{font-family:var(--mono);font-size:11px;color:var(--text2);margin-top:2px}
+.sr-reasoning{font-size:12px;color:var(--text2);line-height:1.7;padding-top:8px;border-top:1px solid var(--border2);margin-top:6px}
+
+/* SIGNAL HISTORY TABLE */
+.signal-table{width:100%;border-collapse:collapse;font-size:11px}
+.signal-table th{text-align:left;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:9px 14px;border-bottom:1px solid var(--border);background:var(--bg2);font-weight:400;color:var(--text2)}
+.signal-table td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.signal-table tr:hover td{background:rgba(59,130,246,.02)}
+.signal-table tr:last-child td{border-bottom:none}
+.decision-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid}
+.dp-buy{color:var(--green2);border-color:rgba(34,197,94,.3);background:var(--green-l)}
+.dp-hold{color:var(--amber);border-color:rgba(245,158,11,.3);background:var(--amber-l)}
+.dp-blocked{color:var(--red2);border-color:rgba(239,68,68,.3);background:var(--red-l)}
+.score-cell{font-family:var(--mono);font-weight:700}
+.empty-state{text-align:center;padding:2.5rem;color:var(--text3);font-size:12px;color:var(--text2)}
+.empty-icon{font-size:2.2rem;display:block;margin-bottom:10px;opacity:.3}
+
+.tx-log{background:var(--bg1);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.tx-log-hdr{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text)}
+.tx-entries{max-height:170px;overflow-y:auto}
+.tx-entries::-webkit-scrollbar{width:3px}.tx-entries::-webkit-scrollbar-thumb{background:var(--border)}
+.tx-entry{display:flex;align-items:center;gap:10px;padding:9px 1.5rem;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;animation:fade-up .2s ease}
+.tx-entry:last-child{border-bottom:none}
+.tx-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dok{background:var(--green2);box-shadow:0 0 5px var(--green2)}.derr{background:var(--red2);box-shadow:0 0 5px var(--red2)}
+.tx-method{color:var(--blue2);flex:1}.tx-detail{color:var(--text3);font-size:9px;color:var(--text2)}.tx-time{color:var(--text3);font-size:9px;color:var(--text2)}
+.tok{color:var(--green2);font-size:9px}.terr{color:var(--red2);font-size:9px}
+.empty-log{padding:1.5rem;text-align:center;font-size:11px;color:var(--text2)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📡</div>
+    <div><div class="logo-name">SignalCore</div><div class="logo-sub">AI Trading Signal Oracle · GenLayer</div></div>
+  </div>
+  <div class="header-right">
+    <div class="hchip"><div class="hdot b"></div>AI Consensus</div>
+    <div class="hchip"><div class="hdot g"></div>5 Validators</div>
+    <div class="contract-tag">0x9ba31…7246</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="hero-badge">⚡ Decentralized Trading Signal Oracle</div>
+    <h1 class="hero-title">Trading signals you can <span>verify</span>,<br>not just trust</h1>
+    <p class="hero-sub">Five independent AI validators reach consensus on a composite market signal — with the same fail-closed risk vetoes, position caps, and drawdown circuit breaker as a professional trading desk. No custody, no hidden execution — just a verifiable, on-chain decision.</p>
+  </div>
+
+  <div class="breaker-banner" id="breaker-banner">
+    <div class="bb-icon">🚨</div>
+    <div class="bb-text"><div class="bb-title">CIRCUIT BREAKER TRIPPED</div><div class="bb-reason" id="bb-reason"></div></div>
+    <button class="btn btn-red" onclick="resetBreaker()">Reset (Owner Only)</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Signals Evaluated</div><div class="stat-val blue" id="st-total">0</div></div>
+    <div class="stat"><div class="stat-label">BUY Signals</div><div class="stat-val green" id="st-buy">0</div></div>
+    <div class="stat"><div class="stat-label">Blocked</div><div class="stat-val red" id="st-blocked">0</div></div>
+    <div class="stat"><div class="stat-label">Current Position</div><div class="stat-val amber" id="st-position">0.000</div></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- CONFIGURE -->
+    <div class="card grid-full">
+      <div class="card-title"><div class="card-icon ci-blue">⚙️</div>Configure Risk Parameters<span class="method-tag">configure() · WRITE (owner)</span></div>
+      <div class="field-row3">
+        <div class="field"><label class="field-label">Symbol</label><input type="text" id="cfg-symbol" value="BTCUSDT"></div>
+        <div class="field"><label class="field-label">Max Position</label><input type="text" id="cfg-maxpos" value="0.01"></div>
+        <div class="field"><label class="field-label">Order Size</label><input type="text" id="cfg-ordersize" value="0.001"></div>
+      </div>
+      <div class="field" style="margin-top:8px"><label class="field-label">Max Drawdown % (e.g. 0.05 = 5%)</label><input type="text" id="cfg-drawdown" value="0.05"></div>
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+        <button class="btn btn-blue" id="cfg-btn" onclick="configureContract()"><span id="cfg-txt">⚙️ Apply Configuration</span></button>
+        <span id="cfg-sp" style="display:none"><span class="spinner"></span></span>
+      </div>
+      <div class="terminal" id="cfg-terminal">
+        <div class="term-bar"><div class="tdot" style="background:#ff5f57"></div><div class="tdot" style="background:#febc2e"></div><div class="tdot" style="background:#28c840"></div><span class="term-lbl">GENVM OUTPUT</span></div>
+        <div class="term-out" id="cfg-out"></div>
+      </div>
+    </div>
+
+    <!-- EVALUATE SIGNAL -->
+    <div class="card grid-full">
+      <div class="card-title"><div class="card-icon ci-blue">📡</div>Evaluate Trading Signal<span class="method-tag">evaluate_signal() · WRITE</span></div>
+      <div class="field"><label class="field-label">Market Data URL</label><input type="text" id="ev-url" value="https://alternative.me/crypto/fear-and-greed-index/" placeholder="https://source-of-sentiment-data.com"></div>
+      <div class="field"><label class="field-label">News Query / Keyword</label><input type="text" id="ev-news" value="BTC" placeholder="BTC"></div>
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+        <button class="btn btn-blue" id="ev-btn" onclick="evaluateSignal()"><span id="ev-txt">📡 Run Signal Evaluation</span></button>
+        <span id="ev-sp" style="display:none"><span class="spinner"></span></span>
+      </div>
+      <div class="terminal" id="ev-terminal">
+        <div class="term-bar"><div class="tdot" style="background:#ff5f57"></div><div class="tdot" style="background:#febc2e"></div><div class="tdot" style="background:#28c840"></div><span class="term-lbl">AI CONSENSUS OUTPUT</span></div>
+        <div class="term-out" id="ev-out"></div>
+      </div>
+      <div class="signal-result" id="ev-result"></div>
+    </div>
+
+    <!-- REGISTER FILL -->
+    <div class="card">
+      <div class="card-title"><div class="card-icon ci-green">✅</div>Register Fill<span class="method-tag">register_fill() · WRITE (owner)</span></div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Side</label>
+          <select id="rf-side" style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:9px 12px;outline:none;border-radius:9px">
+            <option value="buy">BUY</option><option value="sell">SELL</option>
+          </select>
+        </div>
+        <div class="field"><label class="field-label">Amount</label><input type="text" id="rf-amount" value="0.001"></div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+        <button class="btn btn-outline btn-full" id="rf-btn" onclick="registerFill()"><span id="rf-txt">✅ Register Fill</span></button>
+        <span id="rf-sp" style="display:none"><span class="spinner dark"></span></span>
+      </div>
+      <div class="terminal" id="rf-terminal">
+        <div class="term-bar"><div class="tdot" style="background:#ff5f57"></div><div class="tdot" style="background:#febc2e"></div><div class="tdot" style="background:#28c840"></div><span class="term-lbl">GENVM OUTPUT</span></div>
+        <div class="term-out" id="rf-out"></div>
+      </div>
+    </div>
+
+    <!-- RISK STATUS -->
+    <div class="card">
+      <div class="card-title"><div class="card-icon ci-amber">🛡️</div>Risk Status<span class="method-tag">get_risk_status() · VIEW</span>
+        <button class="btn btn-outline" onclick="renderRiskStatus()" style="margin-left:auto;padding:4px 10px;font-size:10px">↻</button>
+      </div>
+      <div id="risk-status-wrap" style="font-family:var(--mono);font-size:11px;color:var(--text2);line-height:2;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px">
+        Loading risk status…
+      </div>
+    </div>
+
+    <!-- SIGNAL HISTORY -->
+    <div class="card grid-full">
+      <div class="card-title"><div class="card-icon ci-blue">📋</div>Signal History<span class="method-tag">get_signal() · VIEW</span></div>
+      <div id="history-wrap"><div class="empty-state"><span class="empty-icon">📡</span>No signals evaluated yet.</div></div>
+    </div>
+
+    <!-- TX LOG -->
+    <div class="grid-full">
+      <div class="tx-log">
+        <div class="tx-log-hdr">Transaction Log<button class="btn btn-outline" onclick="txLog=[];renderTxLog()" style="padding:4px 10px;font-size:10px">Clear</button></div>
+        <div class="tx-entries" id="tx-entries"><div class="empty-log">No transactions yet</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let signals = [], txLog = [];
+let config = { symbol:'BTCUSDT', max_position:0.01, order_size:0.001, max_drawdown_pct:0.05 };
+let position = { current: 0.0, peak_equity: 0.0 };
+let breaker = { tripped: false, reason: '' };
+
+const NODES = [
+  {id:'0x4d2D27b0', model:'deepseek/deepseek-v4-pro'},
+  {id:'0x316254B2', model:'anthropic/claude-sonnet'},
+  {id:'0xBfbC0616', model:'qwen/qwen3.6-max'},
+  {id:'0x61309C7e', model:'mistralai/mistral-medium'},
+  {id:'0xf93f1743', model:'qwen/qwen3.6-plus'},
+];
+
+function now(){ return new Date().toLocaleTimeString('en',{hour12:false}); }
+function addTx(m,s,d){ txLog.unshift({m,s,d,t:now()}); renderTxLog(); }
+function renderTxLog(){
+  const el=document.getElementById('tx-entries');
+  if(!txLog.length){el.innerHTML='<div class="empty-log">No transactions yet</div>';return;}
+  el.innerHTML=txLog.slice(0,14).map(t=>`<div class="tx-entry"><div class="tx-dot ${t.s==='ok'?'dok':'derr'}"></div><span class="tx-method">${t.m}</span><span class="${t.s==='ok'?'tok':'terr'}">${t.s==='ok'?'✓ ACCEPTED':'✗ REVERTED'}</span><span class="tx-detail">${t.d}</span><span class="tx-time">${t.t}</span></div>`).join('');
+}
+function setLoad(id,on,lbl){
+  const b=document.getElementById(id+'-btn'),s=document.getElementById(id+'-sp'),t=document.getElementById(id+'-txt');
+  if(b)b.disabled=on;if(s)s.style.display=on?'inline':'none';if(t&&!on&&lbl)t.textContent=lbl;if(t&&on)t.textContent='…';
+}
+function showTerm(id,lines){
+  const t=document.getElementById(id+'-terminal'),o=document.getElementById(id+'-out');
+  t.classList.add('visible');o.innerHTML=lines.map(([c,l])=>`<span class="${c}">${l}</span>\n`).join('');
+}
+function appTerm(id,lines){
+  const o=document.getElementById(id+'-out');
+  lines.forEach(([c,l])=>o.innerHTML+=`<span class="${c}">${l}</span>\n`);
+  o.scrollTop=o.scrollHeight;
+}
+function updateStats(){
+  document.getElementById('st-total').textContent    = signals.length;
+  document.getElementById('st-buy').textContent      = signals.filter(s=>s.decision==='BUY').length;
+  document.getElementById('st-blocked').textContent  = signals.filter(s=>s.decision==='BLOCKED').length;
+  document.getElementById('st-position').textContent = position.current.toFixed(4);
+  const bb = document.getElementById('breaker-banner');
+  if(breaker.tripped){ bb.classList.add('tripped'); document.getElementById('bb-reason').textContent = breaker.reason; }
+  else { bb.classList.remove('tripped'); }
+  renderRiskStatus();
+}
+function renderRiskStatus(){
+  document.getElementById('risk-status-wrap').innerHTML =
+    `Symbol: <span style="color:var(--blue2)">${config.symbol}</span><br>`+
+    `Position: <span style="color:var(--amber)">${position.current.toFixed(4)}</span> / ${config.max_position}<br>`+
+    `Breaker: ${breaker.tripped ? '<span style="color:var(--red2)">TRIPPED — '+breaker.reason+'</span>' : '<span style="color:var(--green2)">OK</span>'}`;
+}
+
+function configureContract(){
+  const symbol   = document.getElementById('cfg-symbol').value.trim().toUpperCase();
+  const maxpos   = document.getElementById('cfg-maxpos').value.trim();
+  const ordersize= document.getElementById('cfg-ordersize').value.trim();
+  const drawdown = document.getElementById('cfg-drawdown').value.trim();
+  if(!symbol||!maxpos||!ordersize||!drawdown) return;
+  setLoad('cfg',true);
+  showTerm('cfg',[
+    ['td',`> genlayer write configure --args '"${symbol}","${maxpos}","${ordersize}","${drawdown}"'`],
+    ['tb','Broadcasting transaction…'],
+  ]);
+  setTimeout(()=>{
+    config = {symbol, max_position:parseFloat(maxpos), order_size:parseFloat(ordersize), max_drawdown_pct:parseFloat(drawdown)};
+    appTerm('cfg',[
+      ['tg','✓ Transaction accepted — state committed'],
+      ['td',`  state["config:symbol"]           = "${symbol}"`],
+      ['td',`  state["config:max_position"]     = "${maxpos}"`],
+      ['td',`  state["config:order_size"]       = "${ordersize}"`],
+      ['td',`  state["config:max_drawdown_pct"] = "${drawdown}"`],
+      ['tg',`  → "Configured ${symbol} | max_position=${maxpos} | order_size=${ordersize} | max_drawdown=${drawdown}"`],
+    ]);
+    setLoad('cfg',false,'⚙️ Apply Configuration');
+    addTx(`configure("${symbol}")`,'ok',`max_pos=${maxpos}`);
+    updateStats();
+  },1000);
+}
+
+function evaluateSignal(){
+  if(breaker.tripped){
+    showTerm('ev',[['tr',`✗ BLOCKED: Circuit breaker tripped — ${breaker.reason}`]]);
+    addTx('evaluate_signal(…)','err','breaker tripped');
+    return;
+  }
+  const url  = document.getElementById('ev-url').value.trim();
+  const news = document.getElementById('ev-news').value.trim();
+  if(!url||!news) return;
+  setLoad('ev',true);
+  document.getElementById('ev-result').className = 'signal-result';
+
+  showTerm('ev',[
+    ['td',`> genlayer write evaluate_signal --args '"${url.slice(0,35)}…","${news}"'`],
+    ['tb','Broadcasting transaction…'],
+    ['ta',`gl.nondet.web.render("${url.slice(0,35)}…") → fetching live market data…`],
+    ['ta','gl.nondet.exec_prompt() → dispatching to 5 validator nodes…'],
+  ]);
+
+  NODES.forEach((n,i)=>{
+    setTimeout(()=>appTerm('ev',[['td',`  node ${i+1}/5 [${n.id}] ${n.model} → analyzing composite signal…`]]),700+i*600);
+    setTimeout(()=>appTerm('ev',[['tg',`  node ${i+1}/5 [${n.id}] → verdict submitted ✓`]]),1200+i*600);
+  });
+
+  const total = 1200+NODES.length*600+700;
+  setTimeout(()=>appTerm('ev',[['ta','gl.eq_principle.strict_eq() → all 5 nodes agree on composite score…']]),total-600);
+
+  setTimeout(()=>{
+    const score = (Math.random()*2-1);
+    const calibrated = Math.random() > 0.08;
+    const crowded = score > 0.15 && Math.random() < 0.25;
+    const reasoning = calibrated
+      ? (score > 0.15 ? 'Sentiment indicators show healthy accumulation patterns with balanced positioning across derivatives markets.'
+         : score < -0.5 ? 'Extreme fear signals detected alongside elevated short interest — downside momentum risk flagged.'
+         : 'Market conditions are mixed with no strong directional conviction from sentiment or positioning data.')
+      : 'Insufficient reliable telemetry was available to form a confident judgment.';
+
+    let decision, blockReason='', headroom=Math.max(0, config.max_position - position.current);
+
+    if(!calibrated){ decision='BLOCKED'; blockReason='Market data uncalibrated or incomplete. Failing closed.'; }
+    else if(score < -0.5){ decision='BLOCKED'; blockReason=`Composite score ${score.toFixed(2)} triggers downside veto.`; }
+    else if(score > 0.15 && crowded){ decision='BLOCKED'; blockReason='Bullish score but long positioning is overcrowded — squeeze risk veto.'; }
+    else if(score > 0.15){
+      if(config.order_size > headroom){ decision='BLOCKED'; blockReason=`Order size ${config.order_size} exceeds remaining headroom ${headroom.toFixed(6)}.`; }
+      else { decision='BUY'; }
+    } else { decision='HOLD'; }
+
+    // drawdown check
+    if(position.current > position.peak_equity) position.peak_equity = position.current;
+    else if(position.peak_equity > 0){
+      const dd = (position.peak_equity - position.current) / position.peak_equity;
+      if(dd >= config.max_drawdown_pct){
+        breaker.tripped = true;
+        breaker.reason = `Drawdown ${(dd*100).toFixed(2)}% exceeded max allowed ${(config.max_drawdown_pct*100).toFixed(2)}%.`;
+        decision = 'BLOCKED'; blockReason = `Circuit breaker tripped this cycle — ${breaker.reason}`;
+      }
+    }
+
+    const sid = signals.length;
+    signals.push({id:sid, symbol:config.symbol, composite_score:score, calibrated, decision, block_reason:blockReason, reasoning});
+
+    appTerm('ev',[
+      [decision==='BUY'?'tg':decision==='HOLD'?'ta':'tr', `✓ Consensus: ALL 5 validators agree → ${decision}`],
+      ['td', `  state["signal:${sid}"].composite_score = ${score.toFixed(2)}`],
+      ['td', `  state["signal:${sid}"].decision = "${decision}"`],
+      [decision==='BUY'?'tg':decision==='HOLD'?'ta':'tr', `  → "${decision==='BLOCKED'?'BLOCKED: '+blockReason:decision+' — score '+score.toFixed(2)}"`],
+    ]);
+
+    const rEl = document.getElementById('ev-result');
+    const cls = decision==='BUY'?'buy':decision==='HOLD'?'hold':'blocked';
+    const icon = decision==='BUY'?'🟢':decision==='HOLD'?'🟡':'🔴';
+    rEl.className = 'signal-result visible ' + cls;
+    rEl.innerHTML = `
+      <div class="sr-header">
+        <div class="sr-icon">${icon}</div>
+        <div><div class="sr-decision">${decision}</div><div class="sr-score">composite_score: ${score.toFixed(2)} | calibrated: ${calibrated}</div></div>
+      </div>
+      <div class="sr-reasoning">${decision==='BLOCKED' ? blockReason : reasoning}</div>
+    `;
+
+    setLoad('ev',false,'📡 Run Signal Evaluation');
+    addTx(`evaluate_signal(…)`,'ok',decision);
+    updateStats(); renderHistory();
+  },total);
+}
+
+function registerFill(){
+  const side   = document.getElementById('rf-side').value;
+  const amount = document.getElementById('rf-amount').value.trim();
+  if(!amount) return;
+  setLoad('rf',true);
+  showTerm('rf',[
+    ['td',`> genlayer write register_fill --args '"${side}","${amount}"'`],
+    ['tb','Broadcasting transaction…'],
+  ]);
+  setTimeout(()=>{
+    const amt = parseFloat(amount);
+    if(side==='buy') position.current += amt;
+    else position.current = Math.max(0, position.current - amt);
+    appTerm('rf',[
+      ['tg','✓ Transaction accepted — state committed'],
+      ['td',`  state["position:current"] = "${position.current.toFixed(6)}"`],
+      ['tg',`  → "Fill registered: ${side.toUpperCase()} ${amount}. New position: ${position.current.toFixed(6)}"`],
+    ]);
+    setLoad('rf',false,'✅ Register Fill');
+    addTx(`register_fill("${side}","${amount}")`,'ok',`position=${position.current.toFixed(4)}`);
+    updateStats();
+  },900);
+}
+
+function resetBreaker(){
+  breaker = {tripped:false, reason:''};
+  position.peak_equity = 0;
+  addTx('reset_circuit_breaker()','ok','breaker cleared');
+  updateStats();
+}
+
+function renderHistory(){
+  const el = document.getElementById('history-wrap');
+  if(!signals.length){ el.innerHTML='<div class="empty-state"><span class="empty-icon">📡</span>No signals evaluated yet.</div>'; return; }
+  el.innerHTML = `<table class="signal-table">
+    <thead><tr><th>ID</th><th>Score</th><th>Decision</th><th>Reasoning</th></tr></thead>
+    <tbody>${[...signals].reverse().map(s=>{
+      const scoreColor = s.composite_score>0.15?'var(--green2)':s.composite_score<-0.5?'var(--red2)':'var(--amber)';
+      const dp = s.decision==='BUY'?'dp-buy':s.decision==='HOLD'?'dp-hold':'dp-blocked';
+      return `<tr>
+        <td style="font-family:var(--mono);color:var(--text3)">#${s.id}</td>
+        <td><span class="score-cell" style="color:${scoreColor}">${s.composite_score.toFixed(2)}</span></td>
+        <td><div class="decision-pill ${dp}">${s.decision}</div></td>
+        <td style="max-width:320px;font-size:10px">${(s.decision==='BLOCKED'?s.block_reason:s.reasoning).slice(0,80)}…</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+updateStats();
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "strategic-trading-signal",
+  "version": "1.0.0",
+  "description": "GenLayer Intelligent Contract producing verifiable AI-consensus-backed trading signals with fail-closed risk vetoes and a manual-reset drawdown circuit breaker.",
+  "keywords": [
+    "genlayer", "trading", "signal-oracle", "blockchain", "ai",
+    "consensus", "web3", "defi", "risk-management", "circuit-breaker"
+  ],
+  "homepage": "https://studio.genlayer.com/?import-contract=0x9ba3126C5f800F455fb22887507C5eb635327246",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JimmyOgb/strategic-trading-signal"
+  },
+  "license": "MIT",
+  "scripts": {
+    "dev": "npx serve frontend/",
+    "start": "npx serve frontend/",
+    "deploy:netlify": "netlify deploy --prod --dir frontend/",
+    "deploy:vercel": "vercel --prod"
+  }
+}
